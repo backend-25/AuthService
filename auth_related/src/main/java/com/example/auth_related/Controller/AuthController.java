@@ -2,6 +2,8 @@ package com.example.auth_related.Controller;
 
 import com.example.auth_related.Dtos.*;
 import com.example.auth_related.Exceptions.UserAlreadyPresent;
+import com.example.auth_related.Exceptions.UserNotFound;
+import com.example.auth_related.Exceptions.WrongPassword;
 import com.example.auth_related.Service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,7 +37,7 @@ public class AuthController {
         } catch (UserAlreadyPresent e)
         {
             responseDto.setRequestStatus(RequestStatus.FAILURE);
-            responseDto.setSignupMsg("User is already exist with Email"+signUpRequestDto.getEmail());
+            responseDto.setSignupMsg(String.valueOf(e));
             return new ResponseEntity<>(responseDto,HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity<>(responseDto,HttpStatus.OK);
@@ -44,10 +46,20 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> Login(@RequestBody LoginRequestDto loginRequestDto)
     {
-        String token=authService.Login(loginRequestDto.getEmail(),loginRequestDto.getPassword());
-
         LoginResponseDto loginResponseDto=new LoginResponseDto();
+        String token= null;
+        try {
+            token = authService.Login(loginRequestDto.getEmail(),loginRequestDto.getPassword());
+        }
+        catch (Exception e)
+        {
+            loginResponseDto.setRequestStatus(RequestStatus.FAILURE);
+            loginResponseDto.setLoginMessage(String.valueOf(e));
+            return new ResponseEntity<>(loginResponseDto,HttpStatus.NOT_FOUND);
+        }
+
         loginResponseDto.setRequestStatus(RequestStatus.SUCCESS);
+        loginResponseDto.setLoginMessage("Login Successfully");
         MultiValueMap<String,String> header= new LinkedMultiValueMap<>();
         header.add("AUTH TOKEN",token);
         ResponseEntity<LoginResponseDto> responseEntity=new ResponseEntity(loginResponseDto,header,HttpStatus.OK);
